@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MM3 Terminal</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card: #16213e;
+            --accent: #00d4ff;
+            --green: #00ff88;
+            --red: #ff4757;
+            --text: #e0e0e0;
+            --text-muted: #8888aa;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 12px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .header h1 {
+            font-size: 20px;
+            color: var(--accent);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            margin: 6px 0;
+        }
+        .status-on { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
+        .status-off { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid var(--red); }
+        .card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+        .card h3 {
+            color: var(--accent);
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .metric-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .metric-value {
+            font-size: 16px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+        .metric-value.green { color: var(--green); }
+        .metric-value.red { color: var(--red); }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 6px;
+            color: #fff;
+            background: #3742fa;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-start { background: var(--green); color: #000; }
+        .btn-stop { background: #ffa502; color: #000; }
+        .btn-panic { background: var(--red); }
+        .ladder-bar-outer {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            height: 22px;
+            overflow: hidden;
+            margin: 8px 0;
+            position: relative;
+        }
+        .ladder-bar-inner {
+            background: linear-gradient(90deg, var(--green), var(--accent));
+            height: 100%;
+            transition: width 0.5s;
+        }
+        .ladder-bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .chart-container {
+            width: 100%;
+            height: 200px;
+            margin-top: 10px;
+        }
+        .update-time {
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 12px;
+        }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .tab {
+            flex: 1;
+            background: var(--card);
+            border: none;
+            color: var(--text-muted);
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: var(--accent);
+            color: #000;
+            font-weight: bold;
+        }
+        .slot-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .slot-symbol {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .slot-pnl {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 MM3 Terminal</h1>
+        <div id="tradingBadge" class="status-badge status-off">● TRADING OFF</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" data-tab="slots">Slots</button>
+        <button class="tab" data-tab="trades">Trades</button>
+        <button class="tab" data-tab="chart">Chart</button>
+    </div>
+
+    <!-- Slots Tab -->
+    <div id="slotsTab">
+        <div id="slotsContainer"></div>
+    </div>
+
+    <!-- Trades Tab -->
+    <div id="tradesTab" style="display:none;">
+        <div class="card">
+            <h3>📋 Recent Trades</h3>
+            <table id="tradesTable" style="width:100%; border-collapse:collapse;">
+                <thead><tr><th>Symbol</th><th>Side</th><th>P&L</th><th>Reason</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Chart Tab -->
+    <div id="chartTab" style="display:none;">
+        <div class="card">
+            <h3>📈 Cumulative P&L</h3>
+            <div class="chart-container">
+                <canvas id="pnlChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <h3>🎮 Controls</h3>
+        <button class="btn btn-start" id="btnToggle" onclick="toggleTrading()">▶ START TRADING</button>
+        <button class="btn" onclick="runScreener()">📡 Run Scanner</button>
+        <button class="btn" onclick="dailySummary()">📋 Daily Summary</button>
+        <button class="btn btn-panic" onclick="panic()">⚠️ PANIC</button>
+    </div>
+
+    <div class="update-time" id="updateTime">Connecting…</div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // ===== CONFIG =====
+        const API_BASE = 'https://repository-trains-hartford-incentives.trycloudflare.com';  // Replace with your actual Cloudflare tunnel URL
+
+        let tradingStatus = {};
+        let allSlots = {};
+        let currentTab = 'slots';
+
+        // ===== Tab Switching =====
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('slotsTab').style.display = 'none';
+                document.getElementById('tradesTab').style.display = 'none';
+                document.getElementById('chartTab').style.display = 'none';
+                document.getElementById(tab.dataset.tab + 'Tab').style.display = 'block';
+                currentTab = tab.dataset.tab;
+                if (currentTab === 'chart') renderChart();
+            });
+        });
+
+        // ===== API Calls =====
+        async function fetchStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/api/status`);
+                const data = await res.json();
+                if (data.success) {
+                    tradingStatus = data.data;
+                    updateUI();
+                }
+                const resAll = await fetch(`${API_BASE}/api/status_all`);
+                const allData = await resAll.json();
+                if (allData.success) {
+                    allSlots = allData.data;
+                    renderSlots();
+                }
+            } catch (e) {
+                console.log('Fetch error:', e);
+            }
+            document.getElementById('updateTime').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+        }
+
+        function updateUI() {
+            const badge = document.getElementById('tradingBadge');
+            const btn = document.getElementById('btnToggle');
+            if (tradingStatus.trading_enabled) {
+                badge.className = 'status-badge status-on';
+                badge.textContent = '● TRADING ON';
+                btn.className = 'btn btn-stop';
+                btn.textContent = '⏸ STOP TRADING';
+            } else {
+                badge.className = 'status-badge status-off';
+                badge.textContent = '● TRADING OFF';
+                btn.className = 'btn btn-start';
+                btn.textContent = '▶ START TRADING';
+            }
+        }
+
+        function renderSlots() {
+            const container = document.getElementById('slotsContainer');
+            if (!allSlots || Object.keys(allSlots).length === 0) {
+                container.innerHTML = '<div class="card"><p>No active slots.</p></div>';
+                return;
+            }
+            let html = '';
+            for (const [sym, data] of Object.entries(allSlots)) {
+                const live = data.live || {};
+                const ladder = data.ladder || {};
+                const risk = data.risk || {};
+                const pnl = (live.mid && live.avg_entry && live.net_qty) 
+                    ? (live.side === 'short' ? (live.avg_entry - live.mid) * Math.abs(live.net_qty) : (live.mid - live.avg_entry) * Math.abs(live.net_qty))
+                    : 0;
+                const pnlClass = pnl >= 0 ? 'green' : 'red';
+                const posLine = live.net_qty ? `${live.side} ${Math.abs(live.net_qty).toFixed(4)}` : 'FLAT';
+
+                html += `
+                <div class="card">
+                    <div class="slot-row">
+                        <span class="slot-symbol">${sym.split(':')[0]}</span>
+                        <span class="slot-pnl ${pnlClass}">$${pnl.toFixed(2)}</span>
+                    </div>
+                    <div class="metrics">
+                        <div><div class="metric-label">Mid</div><div class="metric-value">${(live.mid||0).toFixed(6)}</div></div>
+                        <div><div class="metric-label">Position</div><div class="metric-value">${posLine}</div></div>
+                        <div><div class="metric-label">Entry</div><div class="metric-value">${(live.avg_entry||0).toFixed(6)}</div></div>
+                        <div><div class="metric-label">Stop Loss</div><div class="metric-value">${(live.live_sl||'--')}</div></div>
+                    </div>
+                    <div class="ladder-bar-outer">
+                        <div class="ladder-bar-inner" style="width:${ladder.total ? (ladder.consumed/ladder.total*100).toFixed(0) : 0}%"></div>
+                        <div class="ladder-bar-text">${ladder.consumed||0}/${ladder.total||0} filled</div>
+                    </div>
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <button class="btn" style="padding:6px; font-size:11px;" onclick="quickSeed('${sym}')">⚡ Seed</button>
+                        <button class="btn" style="padding:6px; font-size:11px;" onclick="resetLadder('${sym}')">🪜 Reset</button>
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderChart() {
+            fetch(`${API_BASE}/api/trades?days=7`)
+                .then(r => r.json())
+                .then(json => {
+                    const trades = json.data || [];
+                    const labels = [], data = [];
+                    let cum = 0;
+                    [...trades].reverse().forEach(t => {
+                        cum += t.pnl || 0;
+                        labels.push(new Date(t.ts*1000).toLocaleDateString('en-US', {month:'short', day:'numeric'}));
+                        data.push(cum);
+                    });
+                    const ctx = document.getElementById('pnlChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: { labels, datasets: [{ label: 'Cum. P&L', data, borderColor: '#00d4ff', tension: 0.1 }] },
+                        options: { scales: { y: { beginAtZero: true } } }
+                    });
+                });
+        }
+
+        // ===== Actions =====
+        async function toggleTrading() {
+            await fetch(`${API_BASE}/api/trading/toggle`, {method:'POST'});
+            fetchStatus();
+            tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        async function quickSeed(sym) {
+            await fetch(`${API_BASE}/api/symbol`, {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({symbol:sym})
+            });
+            fetchStatus();
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        async function resetLadder(sym) {
+            await fetch(`${API_BASE}/api/ladder/reset?symbol=${encodeURIComponent(sym)}`, {method:'POST'});
+            fetchStatus();
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        async function runScreener() {
+            tg.showPopup({title:'Scanner', message:'Run scanner now?'}, async (confirmed) => {
+                if (confirmed) {
+                    await fetch(`${API_BASE}/api/symbol`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:'__run_screener__'})});
+                    fetchStatus();
+                    tg.HapticFeedback.notificationOccurred('warning');
+                }
+            });
+        }
+
+        async function dailySummary() {
+            const res = await fetch(`${API_BASE}/api/trades?days=1`);
+            const json = await res.json();
+            const trades = json.data || [];
+            const totalPnl = trades.reduce((sum,t) => sum + (t.pnl||0), 0);
+            const wins = trades.filter(t => t.pnl > 0).length;
+            const winRate = trades.length ? ((wins/trades.length)*100).toFixed(1) : 0;
+            tg.showPopup({
+                title: 'Daily Summary',
+                message: `Trades: ${trades.length}\nP&L: ${totalPnl.toFixed(2)} USDT\nWin rate: ${winRate}%`
+            });
+        }
+
+        async function panic() {
+            tg.showPopup({title:'⚠️ Confirm', message:'Execute PANIC mode?'}, async (confirmed) => {
+                if (confirmed) {
+                    await fetch(`${API_BASE}/api/panic`, {method:'POST'});
+                    fetchStatus();
+                    tg.HapticFeedback.notificationOccurred('error');
+                }
+            });
+        }
+
+        // ===== Init =====
+        fetchStatus();
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>
