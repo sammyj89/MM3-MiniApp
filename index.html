@@ -478,9 +478,23 @@
         async function runScreener() {
             tg.showPopup({title:'Scanner', message:'Run scanner now?'}, async (confirmed) => {
                 if (confirmed) {
-                    await fetch(`${API_BASE}/api/symbol`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:'__run_screener__'})});
-                    fetchStatus();
-                    tg.HapticFeedback.notificationOccurred('warning');
+                    const btn = document.querySelector('.btn[onclick="runScreener()"]');
+                    if (btn) btn.textContent = '⏳ Scanning…';
+                    try {
+                        const res = await fetch(`${API_BASE}/api/run_screener`, {method:'POST'});
+                        const json = await res.json();
+                        if (json.success && json.data.length) {
+                            const msg = json.data.map(item => 
+                                `• ${item.symbol} (Score: ${item.score.toFixed(2)})`
+                            ).join('\n');
+                            tg.showPopup({title:'Top Picks', message: msg});
+                        } else {
+                            tg.showPopup({title:'No Picks', message:'Scanner found no suitable pairs.'});
+                        }
+                    } catch(e) {
+                        tg.showPopup({title:'Error', message:e.message});
+                    }
+                    if (btn) btn.textContent = '📡 Run Scanner';
                 }
             });
         }
