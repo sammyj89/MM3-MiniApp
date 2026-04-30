@@ -8,174 +8,137 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --bg: #1a1a2e;
-            --card: #16213e;
-            --accent: #00d4ff;
-            --green: #00ff88;
-            --red: #ff4757;
-            --text: #e0e0e0;
-            --text-muted: #8888aa;
+            --bg: #1a1a2e; --card: #16213e; --accent: #00d4ff;
+            --green: #00ff88; --red: #ff4757; --text: #e0e0e0; --text-muted: #8888aa;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            background: var(--bg);
-            color: var(--text);
+            background: var(--bg); color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 12px;
-            max-width: 600px;
-            margin: 0 auto;
+            padding: 12px; max-width: 600px; margin: 0 auto;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 16px;
-        }
-        .header h1 {
-            font-size: 20px;
-            color: var(--accent);
-        }
+        .header { text-align:center; margin-bottom:16px; }
+        .header h1 { font-size:20px; color:var(--accent); }
         .status-badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            margin: 6px 0;
+            display:inline-block; padding:2px 10px; border-radius:12px;
+            font-size:11px; font-weight:bold; margin:6px 0;
         }
-        .status-on { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
-        .status-off { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid var(--red); }
-        .card {
-            background: var(--card);
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 10px;
-        }
-        .card h3 {
-            color: var(--accent);
-            font-size: 13px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .metrics {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .metric-label {
-            font-size: 10px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-        .metric-value {
-            font-size: 16px;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-        }
-        .metric-value.green { color: var(--green); }
-        .metric-value.red { color: var(--red); }
+        .status-on { background: rgba(0,255,136,0.15); color:var(--green); border:1px solid var(--green); }
+        .status-off { background: rgba(255,71,87,0.15); color:var(--red); border:1px solid var(--red); }
+        .card { background:var(--card); border-radius:10px; padding:14px; margin-bottom:10px; }
+        .card h3 { color:var(--accent); font-size:13px; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; }
+        .metrics { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        .metric-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; }
+        .metric-value { font-size:16px; font-weight:bold; font-family:'Courier New', monospace; }
+        .metric-value.green { color:var(--green); } .metric-value.red { color:var(--red); }
         .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 6px;
-            color: #fff;
-            background: #3742fa;
+            width:100%; padding:12px; border:none; border-radius:8px;
+            font-size:14px; font-weight:600; cursor:pointer; margin-bottom:6px;
+            color:#fff; background:#3742fa;
         }
-        .btn:active { transform: scale(0.97); }
-        .btn-start { background: var(--green); color: #000; }
-        .btn-stop { background: #ffa502; color: #000; }
-        .btn-panic { background: var(--red); }
+        .btn:active { transform:scale(0.97); }
+        .btn-start { background:var(--green); color:#000; }
+        .btn-stop { background:#ffa502; color:#000; }
+        .btn-panic { background:var(--red); }
         .ladder-bar-outer {
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            height: 22px;
-            overflow: hidden;
-            margin: 8px 0;
-            position: relative;
+            background:rgba(255,255,255,0.1); border-radius:8px; height:22px;
+            overflow:hidden; margin:8px 0; position:relative;
         }
         .ladder-bar-inner {
-            background: linear-gradient(90deg, var(--green), var(--accent));
-            height: 100%;
-            transition: width 0.5s;
+            background:linear-gradient(90deg, var(--green), var(--accent));
+            height:100%; transition:width 0.5s;
         }
         .ladder-bar-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 11px;
-            font-weight: bold;
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            font-size:11px; font-weight:bold;
         }
-        .chart-container {
-            width: 100%;
-            height: 200px;
-            margin-top: 10px;
-        }
-        .update-time {
-            text-align: center;
-            font-size: 10px;
-            color: var(--text-muted);
-            margin-top: 12px;
-        }
-        .tabs {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 12px;
-        }
+        .chart-container { width:100%; height:200px; margin-top:10px; }
+        .update-time { text-align:center; font-size:10px; color:var(--text-muted); margin-top:12px; }
+        .tabs { display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
         .tab {
-            flex: 1;
-            background: var(--card);
-            border: none;
-            color: var(--text-muted);
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 11px;
-            cursor: pointer;
+            flex:1; background:var(--card); border:none; color:var(--text-muted);
+            padding:8px; border-radius:8px; font-size:11px; cursor:pointer; min-width:50px;
         }
-        .tab.active {
-            background: var(--accent);
-            color: #000;
-            font-weight: bold;
-        }
-        .slot-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .slot-symbol {
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .slot-pnl {
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-        }
+        .tab.active { background:var(--accent); color:#000; font-weight:bold; }
+        .slot-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .slot-symbol { font-weight:bold; font-size:14px; }
+        .slot-pnl { font-family:'Courier New', monospace; font-weight:bold; }
+        .control-row { display:flex; gap:6px; margin-top:8px; }
+        .control-row .btn { flex:1; padding:8px; font-size:11px; }
+        .symbol-select { width:100%; padding:8px; background:var(--card); color:var(--text); border:none; border-radius:8px; margin-bottom:8px; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>📊 MM3 Terminal</h1>
         <div id="tradingBadge" class="status-badge status-off">● TRADING OFF</div>
+        <div id="dailyPnl" class="metric-label" style="margin-top:4px;"></div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-        <button class="tab active" data-tab="slots">Slots</button>
+    <div class="tabs" id="mainTabs">
+        <button class="tab active" data-tab="home">Home</button>
+        <button class="tab" data-tab="slots">Slots</button>
+        <button class="tab" data-tab="ladder">Ladder</button>
+        <button class="tab" data-tab="trail">Trail</button>
+        <button class="tab" data-tab="risk">Risk</button>
         <button class="tab" data-tab="trades">Trades</button>
         <button class="tab" data-tab="chart">Chart</button>
     </div>
 
-    <!-- Slots Tab -->
-    <div id="slotsTab">
+    <select id="symbolSelect" class="symbol-select" style="display:none;"></select>
+
+    <div id="homeTab">
+        <div class="card">
+            <h3>📡 Scanner Top‑5</h3>
+            <div id="scannerResults" style="font-size:12px;">Loading…</div>
+        </div>
+    </div>
+
+    <div id="slotsTab" style="display:none;">
         <div id="slotsContainer"></div>
     </div>
 
-    <!-- Trades Tab -->
+    <div id="ladderTab" style="display:none;">
+        <div class="card">
+            <h3>🪜 Ladder Controls</h3>
+            <div id="ladderSymbol"></div>
+            <div id="ladderStatus"></div>
+            <div style="margin:12px 0;">
+                <label>Spacing Multiplier: <strong id="spacingValue">1.0</strong>x</label>
+                <input type="range" id="spacingSlider" min="0.5" max="3.0" step="0.1" value="1.0" style="width:100%">
+            </div>
+            <div class="control-row">
+                <button class="btn" onclick="resetAllLadder()">🔄 Reset All</button>
+                <button class="btn" onclick="resetRemainingLadder()">📊 Reset Remaining</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="trailTab" style="display:none;">
+        <div class="card">
+            <h3>🛡️ Trail Settings</h3>
+            <div id="trailSymbol"></div>
+            <div id="trailStatus"></div>
+            <div class="control-row" style="margin-top:12px;">
+                <button class="btn" id="toggleHwm" onclick="toggleTrail('HWM_PROTECT_ENABLED')">HWM: ON</button>
+                <button class="btn" id="togglePnl" onclick="toggleTrail('PNL_TRAIL_ENABLED')">PnL: ON</button>
+            </div>
+            <div class="metrics" style="margin-top:12px;">
+                <div><div class="metric-label">HWM start R</div><input type="number" id="hwmStartR" value="0.8" step="0.1" style="width:100%"></div>
+                <div><div class="metric-label">PnL start $</div><input type="number" id="pnlStart" value="1.0" step="0.25" style="width:100%"></div>
+            </div>
+            <button class="btn" style="margin-top:12px;" onclick="saveTrailSettings()">💾 Save Settings</button>
+        </div>
+    </div>
+
+    <div id="riskTab" style="display:none;">
+        <div class="card">
+            <h3>⚠️ Risk Metrics</h3>
+            <div id="riskSymbol"></div>
+            <div id="riskNumbers"></div>
+        </div>
+    </div>
+
     <div id="tradesTab" style="display:none;">
         <div class="card">
             <h3>📋 Recent Trades</h3>
@@ -186,17 +149,13 @@
         </div>
     </div>
 
-    <!-- Chart Tab -->
     <div id="chartTab" style="display:none;">
         <div class="card">
             <h3>📈 Cumulative P&L</h3>
-            <div class="chart-container">
-                <canvas id="pnlChart"></canvas>
-            </div>
+            <div class="chart-container"><canvas id="pnlChart"></canvas></div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
     <div class="card">
         <h3>🎮 Controls</h3>
         <button class="btn btn-start" id="btnToggle" onclick="toggleTrading()">▶ START TRADING</button>
@@ -212,28 +171,67 @@
         tg.ready();
         tg.expand();
 
-        // ===== CONFIG =====
         const API_BASE = 'https://repository-trains-hartford-incentives.trycloudflare.com';
+        let tradingStatus = {}, allSlots = {}, currentTab = 'home', selectedSymbol = '';
+        let scannerTop5 = [], pnlChart = null;
 
-        let tradingStatus = {};
-        let allSlots = {};
-        let currentTab = 'slots';
-
-        // ===== Tab Switching =====
-        document.querySelectorAll('.tab').forEach(tab => {
+        // ── Tab switching ──
+        document.querySelectorAll('#mainTabs .tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('#mainTabs .tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                document.getElementById('slotsTab').style.display = 'none';
-                document.getElementById('tradesTab').style.display = 'none';
-                document.getElementById('chartTab').style.display = 'none';
-                document.getElementById(tab.dataset.tab + 'Tab').style.display = 'block';
                 currentTab = tab.dataset.tab;
+                ['home','slots','ladder','trail','risk','trades','chart'].forEach(id => {
+                    document.getElementById(id+'Tab').style.display = 'none';
+                });
+                document.getElementById(currentTab+'Tab').style.display = 'block';
                 if (currentTab === 'chart') renderChart();
+                // Show symbol selector for per‑pair tabs
+                const sel = document.getElementById('symbolSelect');
+                if (['ladder','trail','risk'].includes(currentTab) && Object.keys(allSlots).length > 1) {
+                    sel.style.display = 'block';
+                    populateSymbolSelect();
+                } else {
+                    sel.style.display = 'none';
+                }
+                refreshCurrentTab();
             });
         });
 
-        // ===== API Calls =====
+        document.getElementById('symbolSelect').addEventListener('change', (e) => {
+            selectedSymbol = e.target.value;
+            refreshCurrentTab();
+        });
+        document.getElementById('spacingSlider').addEventListener('input', (e) => {
+            document.getElementById('spacingValue').textContent = parseFloat(e.target.value).toFixed(1);
+        });
+        document.getElementById('spacingSlider').addEventListener('change', async (e) => {
+            await fetch(`${API_BASE}/api/config`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({key:'LADDER_SPACING_MULTIPLIER', value:e.target.value})
+            });
+            tg.HapticFeedback.impactOccurred('light');
+        });
+
+        function populateSymbolSelect() {
+            const sel = document.getElementById('symbolSelect');
+            sel.innerHTML = '';
+            for (const sym of Object.keys(allSlots)) {
+                const opt = document.createElement('option');
+                opt.value = sym; opt.text = sym.split(':')[0];
+                sel.appendChild(opt);
+            }
+            if (!selectedSymbol || !allSlots[selectedSymbol]) selectedSymbol = Object.keys(allSlots)[0];
+            sel.value = selectedSymbol;
+        }
+
+        async function refreshCurrentTab() {
+            if (currentTab === 'ladder') await loadLadderTab();
+            else if (currentTab === 'trail') await loadTrailTab();
+            else if (currentTab === 'risk') await loadRiskTab();
+        }
+
+        // ── API calls ──
         async function fetchStatus() {
             try {
                 const res = await fetch(`${API_BASE}/api/status`);
@@ -241,15 +239,29 @@
                 if (data.success) {
                     tradingStatus = data.data;
                     updateUI();
+                    document.getElementById('dailyPnl').textContent =
+                        `Today's P&L: ${data.data.daily_pnl?.toFixed(2)||'0.00'} USDT (${data.data.daily_trades_count||0} trades)`;
                 }
                 const resAll = await fetch(`${API_BASE}/api/status_all`);
                 const allData = await resAll.json();
                 if (allData.success) {
                     allSlots = allData.data;
+                    if (!selectedSymbol || !allSlots[selectedSymbol]) {
+                        const keys = Object.keys(allSlots);
+                        if (keys.length) selectedSymbol = keys[0];
+                    }
                     renderSlots();
+                    populateSymbolSelect();
+                }
+                // Scanner results
+                const scannerRes = await fetch(`${API_BASE}/api/screener_top5`);
+                const scannerData = await scannerRes.json();
+                if (scannerData.success) {
+                    scannerTop5 = scannerData.data;
+                    renderScannerResults();
                 }
             } catch (e) {
-                console.log('Fetch error:', e);
+                console.error(e);
             }
             document.getElementById('updateTime').textContent = 'Updated: ' + new Date().toLocaleTimeString();
         }
@@ -258,37 +270,42 @@
             const badge = document.getElementById('tradingBadge');
             const btn = document.getElementById('btnToggle');
             if (tradingStatus.trading_enabled) {
-                badge.className = 'status-badge status-on';
-                badge.textContent = '● TRADING ON';
-                btn.className = 'btn btn-stop';
-                btn.textContent = '⏸ STOP TRADING';
+                badge.className = 'status-badge status-on'; badge.textContent = '● TRADING ON';
+                btn.className = 'btn btn-stop'; btn.textContent = '⏸ STOP TRADING';
             } else {
-                badge.className = 'status-badge status-off';
-                badge.textContent = '● TRADING OFF';
-                btn.className = 'btn btn-start';
-                btn.textContent = '▶ START TRADING';
+                badge.className = 'status-badge status-off'; badge.textContent = '● TRADING OFF';
+                btn.className = 'btn btn-start'; btn.textContent = '▶ START TRADING';
             }
+            document.getElementById('symbolSelect').style.display =
+                (['ladder','trail','risk'].includes(currentTab) && Object.keys(allSlots).length > 1) ? 'block' : 'none';
+        }
+
+        function renderScannerResults() {
+            const el = document.getElementById('scannerResults');
+            if (!scannerTop5.length) {
+                el.textContent = 'No recent scanner data.';
+                return;
+            }
+            el.innerHTML = scannerTop5.map(item => 
+                `<div>• <b>${item.symbol}</b>  RVOL=${item.rvol}%  Score=${item.score.toFixed(2)}</div>`
+            ).join('');
         }
 
         function renderSlots() {
             const container = document.getElementById('slotsContainer');
-            if (!allSlots || Object.keys(allSlots).length === 0) {
-                container.innerHTML = '<div class="card"><p>No active slots.</p></div>';
+            if (!allSlots || !Object.keys(allSlots).length) {
+                container.innerHTML = '<div class="card">No active slots.</div>';
                 return;
             }
-            let html = '';
-            for (const [sym, data] of Object.entries(allSlots)) {
-                const live = data.live || {};
-                const ladder = data.ladder || {};
-                const risk = data.risk || {};
-                const pnl = (live.mid && live.avg_entry && live.net_qty) 
-                    ? (live.side === 'short' ? (live.avg_entry - live.mid) * Math.abs(live.net_qty) : (live.mid - live.avg_entry) * Math.abs(live.net_qty))
+            container.innerHTML = Object.entries(allSlots).map(([sym, data]) => {
+                const live = data.live||{}, ladder = data.ladder||{};
+                const pnl = (live.mid && live.avg_entry && live.net_qty)
+                    ? (live.side==='short' ? (live.avg_entry-live.mid)*Math.abs(live.net_qty) : (live.mid-live.avg_entry)*Math.abs(live.net_qty))
                     : 0;
-                const pnlClass = pnl >= 0 ? 'green' : 'red';
+                const pnlClass = pnl>=0?'green':'red';
                 const posLine = live.net_qty ? `${live.side} ${Math.abs(live.net_qty).toFixed(4)}` : 'FLAT';
-
-                html += `
-                <div class="card">
+                const filledPct = ladder.total ? (ladder.consumed/ladder.total*100).toFixed(0) : 0;
+                return `<div class="card">
                     <div class="slot-row">
                         <span class="slot-symbol">${sym.split(':')[0]}</span>
                         <span class="slot-pnl ${pnlClass}">$${pnl.toFixed(2)}</span>
@@ -297,65 +314,167 @@
                         <div><div class="metric-label">Mid</div><div class="metric-value">${(live.mid||0).toFixed(6)}</div></div>
                         <div><div class="metric-label">Position</div><div class="metric-value">${posLine}</div></div>
                         <div><div class="metric-label">Entry</div><div class="metric-value">${(live.avg_entry||0).toFixed(6)}</div></div>
-                        <div><div class="metric-label">Stop Loss</div><div class="metric-value">${(live.live_sl||'--')}</div></div>
+                        <div><div class="metric-label">Stop Loss</div><div class="metric-value">${live.live_sl||'--'}</div></div>
                     </div>
                     <div class="ladder-bar-outer">
-                        <div class="ladder-bar-inner" style="width:${ladder.total ? (ladder.consumed/ladder.total*100).toFixed(0) : 0}%"></div>
+                        <div class="ladder-bar-inner" style="width:${filledPct}%"></div>
                         <div class="ladder-bar-text">${ladder.consumed||0}/${ladder.total||0} filled</div>
                     </div>
-                    <div style="display:flex; gap:6px; margin-top:8px;">
-                        <button class="btn" style="padding:6px; font-size:11px;" onclick="quickSeed('${sym}')">⚡ Seed</button>
-                        <button class="btn" style="padding:6px; font-size:11px;" onclick="resetLadder('${sym}')">🪜 Reset</button>
+                    <div class="control-row">
+                        <button class="btn" onclick="quickSeed('${sym}')">⚡ Seed</button>
+                        <button class="btn" onclick="resetAllLadderSymbol('${sym}')">🔄 Reset</button>
                     </div>
                 </div>`;
+            }).join('');
+        }
+
+        // ── Ladder tab ──
+        async function loadLadderTab() {
+            const sym = selectedSymbol;
+            document.getElementById('ladderSymbol').textContent = sym ? `Symbol: ${sym}` : 'No symbol selected';
+            if (!sym) return;
+            const res = await fetch(`${API_BASE}/api/status?symbol=${encodeURIComponent(sym)}`);
+            const data = await res.json();
+            if (!data.success) return;
+            const ladder = data.data.ladder||{};
+            document.getElementById('ladderStatus').innerHTML =
+                `Ladder: ${ladder.consumed||0}/${ladder.total||0} | Filled notional: $${ladder.filled_notional_usd||0} | Open orders: ${ladder.open_orders||0}`;
+            // Spacing multiplier
+            const spacingRes = await fetch(`${API_BASE}/api/config?key=LADDER_SPACING_MULTIPLIER`);
+            const spacingData = await spacingRes.json();
+            if (spacingData.success) {
+                const val = parseFloat(spacingData.value) || 1.0;
+                document.getElementById('spacingSlider').value = val;
+                document.getElementById('spacingValue').textContent = val.toFixed(1);
             }
-            container.innerHTML = html;
+        }
+
+        async function resetAllLadder() {
+            if (!selectedSymbol) return;
+            await fetch(`${API_BASE}/api/ladder/reset?symbol=${encodeURIComponent(selectedSymbol)}`, {method:'POST'});
+            fetchStatus();
+            tg.HapticFeedback.impactOccurred('medium');
+        }
+        async function resetRemainingLadder() {
+            if (!selectedSymbol) return;
+            await fetch(`${API_BASE}/api/ladder/reset?symbol=${encodeURIComponent(selectedSymbol)}&mode=remaining`, {method:'POST'});
+            fetchStatus();
+            tg.HapticFeedback.impactOccurred('light');
+        }
+        async function resetAllLadderSymbol(sym) {
+            await fetch(`${API_BASE}/api/ladder/reset?symbol=${encodeURIComponent(sym)}`, {method:'POST'});
+            fetchStatus();
+        }
+
+        // ── Trail tab ──
+        async function loadTrailTab() {
+            const sym = selectedSymbol;
+            if (!sym) return;
+            document.getElementById('trailSymbol').textContent = sym;
+            const [hwmRes, pnlRes, startRRes, startUsdRes] = await Promise.all([
+                fetch(`${API_BASE}/api/config?key=HWM_PROTECT_ENABLED`),
+                fetch(`${API_BASE}/api/config?key=PNL_TRAIL_ENABLED`),
+                fetch(`${API_BASE}/api/config?key=HWM_START_R`),
+                fetch(`${API_BASE}/api/config?key=PNL_START_USD`)
+            ]);
+            const hwm = (await hwmRes.json()).value === 'true';
+            const pnl = (await pnlRes.json()).value === 'true';
+            document.getElementById('toggleHwm').textContent = 'HWM: ' + (hwm?'ON':'OFF');
+            document.getElementById('togglePnl').textContent = 'PnL: ' + (pnl?'ON':'OFF');
+            document.getElementById('hwmStartR').value = (await startRRes.json()).value || '0.8';
+            document.getElementById('pnlStart').value = (await startUsdRes.json()).value || '1.0';
+        }
+
+        async function toggleTrail(key) {
+            const res = await fetch(`${API_BASE}/api/config?key=${key}`);
+            const data = await res.json();
+            const current = data.value === 'true';
+            await fetch(`${API_BASE}/api/config`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({key, value: current?'false':'true'})
+            });
+            loadTrailTab();
+            tg.HapticFeedback.impactOccurred('light');
+        }
+        async function saveTrailSettings() {
+            const startR = document.getElementById('hwmStartR').value;
+            const startUsd = document.getElementById('pnlStart').value;
+            await fetch(`${API_BASE}/api/config`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({key:'HWM_START_R', value:startR})
+            });
+            await fetch(`${API_BASE}/api/config`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({key:'PNL_START_USD', value:startUsd})
+            });
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        // ── Risk tab ──
+        async function loadRiskTab() {
+            const sym = selectedSymbol;
+            if (!sym) return;
+            const res = await fetch(`${API_BASE}/api/status?symbol=${encodeURIComponent(sym)}`);
+            const data = await res.json();
+            if (!data.success) return;
+            const risk = data.data.risk||{};
+            document.getElementById('riskSymbol').textContent = sym;
+            document.getElementById('riskNumbers').innerHTML = `
+                <div class="metrics">
+                    <div><div class="metric-label">Exposure</div><div class="metric-value">$${(risk.exposure_usd||0).toFixed(2)}</div></div>
+                    <div><div class="metric-label">Equity</div><div class="metric-value">$${(risk.equity||0).toFixed(2)}</div></div>
+                    <div><div class="metric-label">Utilization</div><div class="metric-value">${(risk.utilization||0).toFixed(3)}</div></div>
+                    <div><div class="metric-label">Max DD</div><div class="metric-value red">${risk.max_drawdown_pct||0}%</div></div>
+                </div>`;
+        }
+
+        // ── Trades & Chart ──
+        async function loadTradesTab() {
+            const res = await fetch(`${API_BASE}/api/trades?days=1`);
+            const data = await res.json();
+            const trades = data.data||[];
+            const tbody = document.querySelector('#tradesTable tbody');
+            tbody.innerHTML = trades.map(t => `<tr>
+                <td>${t.symbol}</td><td>${t.side}</td>
+                <td class="${t.pnl>=0?'green':'red'}">${t.pnl.toFixed(4)}</td>
+                <td>${t.exit_reason}</td>
+            </tr>`).join('');
         }
 
         function renderChart() {
-            fetch(`${API_BASE}/api/trades?days=7`)
-                .then(r => r.json())
-                .then(json => {
-                    const trades = json.data || [];
-                    const labels = [], data = [];
-                    let cum = 0;
-                    [...trades].reverse().forEach(t => {
-                        cum += t.pnl || 0;
-                        labels.push(new Date(t.ts*1000).toLocaleDateString('en-US', {month:'short', day:'numeric'}));
-                        data.push(cum);
-                    });
-                    const ctx = document.getElementById('pnlChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: { labels, datasets: [{ label: 'Cum. P&L', data, borderColor: '#00d4ff', tension: 0.1 }] },
-                        options: { scales: { y: { beginAtZero: true } } }
-                    });
+            fetch(`${API_BASE}/api/trades?days=7`).then(r=>r.json()).then(json => {
+                const trades = json.data||[];
+                const labels=[], data=[];
+                let cum=0;
+                [...trades].reverse().forEach(t => {
+                    cum += t.pnl||0;
+                    labels.push(new Date(t.ts*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+                    data.push(cum);
                 });
+                const ctx = document.getElementById('pnlChart').getContext('2d');
+                if (pnlChart) pnlChart.destroy();
+                pnlChart = new Chart(ctx, {
+                    type:'line',
+                    data:{labels,datasets:[{label:'Cum. P&L',data,borderColor:'#00d4ff',tension:0.1}]},
+                    options:{scales:{y:{beginAtZero:true}}}
+                });
+            });
         }
 
-        // ===== Actions =====
+        // ── Actions ──
         async function toggleTrading() {
             await fetch(`${API_BASE}/api/trading/toggle`, {method:'POST'});
             fetchStatus();
             tg.HapticFeedback.impactOccurred('medium');
         }
-
         async function quickSeed(sym) {
             await fetch(`${API_BASE}/api/symbol`, {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
+                method:'POST', headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({symbol:sym})
             });
             fetchStatus();
             tg.HapticFeedback.notificationOccurred('success');
         }
-
-        async function resetLadder(sym) {
-            await fetch(`${API_BASE}/api/ladder/reset?symbol=${encodeURIComponent(sym)}`, {method:'POST'});
-            fetchStatus();
-            tg.HapticFeedback.impactOccurred('light');
-        }
-
         async function runScreener() {
             tg.showPopup({title:'Scanner', message:'Run scanner now?'}, async (confirmed) => {
                 if (confirmed) {
@@ -365,20 +484,18 @@
                 }
             });
         }
-
         async function dailySummary() {
             const res = await fetch(`${API_BASE}/api/trades?days=1`);
             const json = await res.json();
-            const trades = json.data || [];
-            const totalPnl = trades.reduce((sum,t) => sum + (t.pnl||0), 0);
-            const wins = trades.filter(t => t.pnl > 0).length;
+            const trades = json.data||[];
+            const totalPnl = trades.reduce((sum,t)=>sum+(t.pnl||0),0);
+            const wins = trades.filter(t=>t.pnl>0).length;
             const winRate = trades.length ? ((wins/trades.length)*100).toFixed(1) : 0;
             tg.showPopup({
-                title: 'Daily Summary',
-                message: `Trades: ${trades.length}\nP&L: ${totalPnl.toFixed(2)} USDT\nWin rate: ${winRate}%`
+                title:'Daily Summary',
+                message:`Trades: ${trades.length}\nP&L: ${totalPnl.toFixed(2)} USDT\nWin rate: ${winRate}%`
             });
         }
-
         async function panic() {
             tg.showPopup({title:'⚠️ Confirm', message:'Execute PANIC mode?'}, async (confirmed) => {
                 if (confirmed) {
@@ -389,9 +506,11 @@
             });
         }
 
-        // ===== Init =====
+        // Init
         fetchStatus();
         setInterval(fetchStatus, 5000);
+        // Refresh trades tab when it's selected
+        setInterval(() => { if (currentTab==='trades') loadTradesTab(); }, 10000);
     </script>
 </body>
 </html>
