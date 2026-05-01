@@ -476,8 +476,15 @@
             tg.HapticFeedback.notificationOccurred('success');
         }
         async function runScreener() {
-            tg.showPopup({title:'Scanner', message:'Run scanner now?'}, async (confirmed) => {
-                if (confirmed) {
+            tg.showPopup({
+                title: 'Scanner',
+                message: 'Run scanner now?',
+                buttons: [
+                    {type: 'ok', text: 'Yes'},
+                    {type: 'cancel', text: 'No'}
+                ]
+            }, async (buttonId) => {
+                if (buttonId === 'ok') {
                     const btn = document.querySelector('.btn[onclick="runScreener()"]');
                     if (btn) btn.textContent = '⏳ Scanning…';
                     try {
@@ -487,12 +494,24 @@
                             const msg = json.data.map(item => 
                                 `• ${item.symbol} (Score: ${item.score.toFixed(2)})`
                             ).join('\n');
-                            tg.showPopup({title:'Top Picks', message: msg});
+                            tg.showPopup({
+                                title: 'Top Picks',
+                                message: msg,
+                                buttons: [{type: 'close', text: 'OK'}]
+                            });
                         } else {
-                            tg.showPopup({title:'No Picks', message:'Scanner found no suitable pairs.'});
+                            tg.showPopup({
+                                title: 'No Picks',
+                                message: 'Scanner found no suitable pairs.',
+                                buttons: [{type: 'close', text: 'OK'}]
+                            });
                         }
                     } catch(e) {
-                        tg.showPopup({title:'Error', message:e.message});
+                        tg.showPopup({
+                            title: 'Error',
+                            message: e.message,
+                            buttons: [{type: 'close', text: 'OK'}]
+                        });
                     }
                     if (btn) btn.textContent = '📡 Run Scanner';
                 }
