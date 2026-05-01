@@ -231,6 +231,32 @@
             else if (currentTab === 'risk') await loadRiskTab();
         }
 
+        async function releaseSlot(sym) {
+            const confirm = await tg.showPopup({
+                title: 'Release Slot',
+                message: `Close position and remove ${sym.split(':')[0]}?`,
+                buttons: [
+                    {type: 'ok', text: 'Yes'},
+                    {type: 'cancel', text: 'No'}
+                ]
+            });
+            if (confirm !== 'ok') return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/release_slot?symbol=${encodeURIComponent(sym)}`, {method:'POST'});
+                const json = await res.json();
+                if (json.success) {
+                    await tg.showPopup({title:'Released', message:`${sym} slot released.`, buttons:[{type:'close', text:'OK'}]});
+                } else {
+                    await tg.showPopup({title:'Failed', message:'Could not release slot.', buttons:[{type:'close', text:'OK'}]});
+                }
+                fetchStatus();
+                tg.HapticFeedback.notificationOccurred('warning');
+            } catch(e) {
+                await tg.showPopup({title:'Error', message:e.message, buttons:[{type:'close', text:'OK'}]});
+            }
+        }
+
         // ── API calls ──
         async function fetchStatus() {
             try {
@@ -323,6 +349,7 @@
                     <div class="control-row">
                         <button class="btn" onclick="quickSeed('${sym}')">⚡ Seed</button>
                         <button class="btn" onclick="resetAllLadderSymbol('${sym}')">🔄 Reset</button>
+                        <button class="btn" onclick="releaseSlot('${sym}')">🔓 Release</button>
                     </div>
                 </div>`;
             }).join('');
