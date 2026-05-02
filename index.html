@@ -99,6 +99,15 @@
             <button class="btn" onclick="closeSlotModal()" style="margin-top:12px; background:#555;">Cancel</button>
         </div>
     </div>    
+
+    <!-- Pick‑Selection Modal (hidden) -->
+    <div id="pickModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background: var(--card); border-radius:12px; padding:20px; width:90%; max-width:400px;">
+            <h3 style="color: var(--accent); margin-bottom:12px;">Select a Pair</h3>
+            <div id="pickButtons"></div>
+            <button class="btn" onclick="closePickModal()" style="margin-top:12px; background:#555;">Cancel</button>
+        </div>
+    </div>
     
     <div id="homeTab">
         <div class="card">
@@ -559,6 +568,29 @@
             document.getElementById('slotModal').style.display = 'none';
         }
 
+        function openPickModal(picks) {
+            const div = document.getElementById('pickButtons');
+            let html = '';
+            picks.forEach(item => {
+                html += `<button class="btn" style="margin-bottom:6px;" onclick="pickSelection('${item.symbol}')">
+                            ${item.symbol} (Score: ${item.score.toFixed(2)})
+                         </button>`;
+            });
+            div.innerHTML = html;
+            document.getElementById('pickModal').style.display = 'flex';
+        }
+
+        function closePickModal() {
+            document.getElementById('pickModal').style.display = 'none';
+        }
+
+        function pickSelection(symbol) {
+            closePickModal();
+            // Now open the slot‑selection modal for this symbol
+            openSlotModal(symbol);
+            const btn = document.querySelector('.btn[onclick="runScreener()"]');
+            if (btn) btn.textContent = '📡 Run Scanner';
+        }
         async function doRotate(oldSym, newSym) {
             closeSlotModal();
             const btn = document.querySelector('.btn[onclick="runScreener()"]');
@@ -616,22 +648,8 @@
                     return;
                 }
                 debug('Showing pick buttons…');
-                const top2 = json.data.slice(0, 2);
-                const buttons = top2.map(item => ({
-                    type: 'ok',
-                    text: `${item.symbol} (Score: ${item.score.toFixed(2)})`,
-                    id: item.symbol
-                }));
-                buttons.push({type:'cancel', text:'Cancel'});
-                const chosenSymbol = await showPopupAsync({title:'Select a pair', message:'This pair will be added to a slot.', buttons:buttons});
-                debug('Pick selection: ' + chosenSymbol);
-                if (!chosenSymbol || chosenSymbol === 'cancel') {
-                    if (btn) btn.textContent = '📡 Run Scanner';
-                    return;
-                }
-
-                // Open HTML modal to choose slot
-                openSlotModal(chosenSymbol);
+                // Use HTML modal to show all picks (no popup button limit)
+                openPickModal(json.data);
             } catch(e) {
                 debug('Error: ' + e.message);
             }
