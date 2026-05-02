@@ -507,17 +507,21 @@
         }
         function showPopupAsync(params) {
             return new Promise(resolve => {
-                if (typeof tg.showPopup === 'function') {
-                    tg.showPopup(params, (buttonId) => {
-                        // Temporary raw‑value debug
-                        const el = document.getElementById('debug');
-                        if (el) el.textContent = 'Raw callback value: ' + String(buttonId);
-                        // Keep the fallback for now
-                        resolve(buttonId || 'cancel');
-                    });
-                } else {
-                    resolve('cancel');
+                if (typeof tg.showPopup !== 'function') {
+                    resolve(null);
+                    return;
                 }
+                // Ensure all buttons use type 'default' (some Telegram versions ignore 'ok'/'cancel')
+                const buttons = (params.buttons || []).map(b => ({
+                    type: 'default',   // 'default' always works
+                    text: b.text,
+                    id: b.id || b.text   // use text as id if not provided
+                }));
+                tg.showPopup({title: params.title, message: params.message, buttons: buttons}, (buttonId) => {
+                    const el = document.getElementById('debug');
+                    if (el) el.textContent = 'Raw callback value: ' + String(buttonId);
+                    resolve(buttonId);
+                });
             });
         }
 
@@ -532,12 +536,12 @@
                 title: 'Scanner',
                 message: 'Run scanner now?',
                 buttons: [
-                    {type: 'ok', text: 'Yes'},
-                    {type: 'cancel', text: 'No'}
+                    {text: 'Yes', id: 'yes'},
+                    {text: 'No', id: 'no'}
                 ]
             });
             debug('Confirmation result: ' + result);
-            if (result !== 'ok') return;
+            if (result !== 'yes') return;
 
             const btn = document.querySelector('.btn[onclick="runScreener()"]');
             if (btn) btn.textContent = '⏳ Scanning…';
@@ -545,23 +549,21 @@
             try {
                 debug('Fetching /api/run_screener…');
                 const res = await fetch(`${API_BASE}/api/run_screener`, {method:'POST'});
-                debug('Got response, parsing JSON…');
                 const json = await res.json();
                 debug('Response received: ' + JSON.stringify(json).substring(0, 80));
                 if (!json.success || !json.data.length) {
-                    debug('No picks');
-                    await showPopupAsync({title:'No Picks', message:'Scanner found no suitable pairs.', buttons:[{type:'close', text:'OK'}]});
+                    await showPopupAsync({title:'No Picks', message:'Scanner found no suitable pairs.', buttons:[{text:'OK', id:'ok'}]});
                     if (btn) btn.textContent = '📡 Run Scanner';
                     return;
                 }
+
                 debug('Showing pick buttons…');
                 const top2 = json.data.slice(0,2);
                 const buttons = top2.map(item => ({
-                    type: 'default',
                     text: `${item.symbol} (Score: ${item.score.toFixed(2)})`,
                     id: item.symbol
                 }));
-                buttons.push({type:'cancel', text:'Cancel'});
+                buttons.push({text:'Cancel', id:'cancel'});
                 const chosenSymbol = await showPopupAsync({title:'Select a pair', message:'Which pair to add?', buttons:buttons});
                 debug('Pick selection: ' + chosenSymbol);
                 if (!chosenSymbol || chosenSymbol === 'cancel') {
@@ -569,15 +571,17 @@
                     return;
                 }
 
+                // Build slot selection buttons
                 const slotButtons = allSlots && Object.keys(allSlots).length
                     ? Object.keys(allSlots).map((sym, idx) => ({
-                        type: 'default',
                         text: `Replace Slot ${idx+1}: ${sym.split(':')[0]}`,
                         id: sym
                     }))
                     : [];
-                if (Object.keys(allSlots||{}).length < 3) slotButtons.push({type:'default', text:'➕ Add as new slot', id:'new'});
-                slotButtons.push({type:'cancel', text:'Cancel'});
+                if (Object.keys(allSlots||{}).length < 3) {
+                    slotButtons.push({text:'➕ Add as new slot', id:'new'});
+                }
+                slotButtons.push({text:'Cancel', id:'cancel'});
                 const selectedSlot = await showPopupAsync({title:'Choose slot', message:`Where to put ${chosenSymbol}?`, buttons:slotButtons});
                 debug('Slot selection: ' + selectedSlot);
                 if (!selectedSlot || selectedSlot === 'cancel') {
@@ -596,14 +600,14 @@
                     success = rotateJson.success;
                 }
                 if (success) {
-                    await showPopupAsync({title:'Done', message:`Slot ${selectedSlot==='new'?'added':'replaced'} with ${chosenSymbol}.`, buttons:[{type:'close', text:'OK'}]});
+                    await showPopupAsync({title:'Done', message:`Slot ${selectedSlot==='new'?'added':'replaced'} with ${chosenSymbol}.`, buttons:[{text:'OK', id:'ok'}]});
                     fetchStatus();
                 } else {
-                    await showPopupAsync({title:'Failed', message:'Could not modify slot.', buttons:[{type:'close', text:'OK'}]});
+                    await showPopupAsync({title:'Failed', message:'Could not modify slot.', buttons:[{text:'OK', id:'ok'}]});
                 }
             } catch(e) {
                 debug('Error: ' + e.message);
-                await showPopupAsync({title:'Error', message:e.message, buttons:[{type:'close', text:'OK'}]});
+                await showPopupAsync({title:'Error', message:e.message, buttons:[{text:'OK', id:'ok'}]});
             }
             if (btn) btn.textContent = '📡 Run Scanner';
         }
