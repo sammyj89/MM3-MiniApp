@@ -505,6 +505,18 @@
             fetchStatus();
             tg.HapticFeedback.notificationOccurred('success');
         }
+        function showPopupAsync(params) {
+            return new Promise(resolve => {
+                if (typeof tg.showPopup === 'function') {
+                    tg.showPopup(params, (buttonId) => {
+                        resolve(buttonId || 'cancel');
+                    });
+                } else {
+                    resolve('cancel');
+                }
+            });
+        }
+
         async function runScreener() {
             const debug = (msg) => { 
                 const el = document.getElementById('debug');
@@ -512,7 +524,7 @@
             };
 
             debug('Asking for confirmation…');
-            const result = await tg.showPopup({
+            const result = await showPopupAsync({
                 title: 'Scanner',
                 message: 'Run scanner now?',
                 buttons: [
@@ -533,8 +545,8 @@
                 const json = await res.json();
                 debug('Response received: ' + JSON.stringify(json).substring(0, 80));
                 if (!json.success || !json.data.length) {
-                    debug('No picks - empty data');
-                    await tg.showPopup({title:'No Picks', message:'Scanner found no suitable pairs.', buttons:[{type:'close', text:'OK'}]});
+                    debug('No picks');
+                    await showPopupAsync({title:'No Picks', message:'Scanner found no suitable pairs.', buttons:[{type:'close', text:'OK'}]});
                     if (btn) btn.textContent = '📡 Run Scanner';
                     return;
                 }
@@ -546,40 +558,50 @@
                     id: item.symbol
                 }));
                 buttons.push({type:'cancel', text:'Cancel'});
-                const chosenSymbol = await tg.showPopup({title:'Select a pair', message:'Which pair to add?', buttons:buttons});
+                const chosenSymbol = await showPopupAsync({title:'Select a pair', message:'Which pair to add?', buttons:buttons});
                 debug('Pick selection: ' + chosenSymbol);
                 if (!chosenSymbol || chosenSymbol === 'cancel') {
                     if (btn) btn.textContent = '📡 Run Scanner';
                     return;
                 }
 
-                // … (rest of the function unchanged: slot selection, rotation, etc.)
+                const slotButtons = allSlots && Object.keys(allSlots).length
+                    ? Object.keys(allSlots).map((sym, idx) => ({
+                        type: 'default',
+                        text: `Replace Slot ${idx+1}: ${sym.split(':')[0]}`,
+                        id: sym
+                    }))
+                    : [];
+                if (Object.keys(allSlots||{}).length < 3) slotButtons.push({type:'default', text:'➕ Add as new slot', id:'new'});
+                slotButtons.push({type:'cancel', text:'Cancel'});
+                const selectedSlot = await showPopupAsync({title:'Choose slot', message:`Where to put ${chosenSymbol}?`, buttons:slotButtons});
+                debug('Slot selection: ' + selectedSlot);
+                if (!selectedSlot || selectedSlot === 'cancel') {
+                    if (btn) btn.textContent = '📡 Run Scanner';
+                    return;
+                }
+
+                let success = false;
+                if (selectedSlot === 'new') {
+                    const addRes = await fetch(`${API_BASE}/api/symbol`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:chosenSymbol})});
+                    const addJson = await addRes.json();
+                    success = addJson.success;
+                } else {
+                    const rotateRes = await fetch(`${API_BASE}/api/rotate_symbol?old=${encodeURIComponent(selectedSlot)}&new=${encodeURIComponent(chosenSymbol)}`, {method:'POST'});
+                    const rotateJson = await rotateRes.json();
+                    success = rotateJson.success;
+                }
+                if (success) {
+                    await showPopupAsync({title:'Done', message:`Slot ${selectedSlot==='new'?'added':'replaced'} with ${chosenSymbol}.`, buttons:[{type:'close', text:'OK'}]});
+                    fetchStatus();
+                } else {
+                    await showPopupAsync({title:'Failed', message:'Could not modify slot.', buttons:[{type:'close', text:'OK'}]});
+                }
             } catch(e) {
                 debug('Error: ' + e.message);
-                await tg.showPopup({title:'Error', message:e.message, buttons:[{type:'close', text:'OK'}]});
+                await showPopupAsync({title:'Error', message:e.message, buttons:[{type:'close', text:'OK'}]});
             }
             if (btn) btn.textContent = '📡 Run Scanner';
-        }
-        async function dailySummary() {
-            const res = await fetch(`${API_BASE}/api/trades?days=1`);
-            const json = await res.json();
-            const trades = json.data||[];
-            const totalPnl = trades.reduce((sum,t)=>sum+(t.pnl||0),0);
-            const wins = trades.filter(t=>t.pnl>0).length;
-            const winRate = trades.length ? ((wins/trades.length)*100).toFixed(1) : 0;
-            tg.showPopup({
-                title:'Daily Summary',
-                message:`Trades: ${trades.length}\nP&L: ${totalPnl.toFixed(2)} USDT\nWin rate: ${winRate}%`
-            });
-        }
-        async function panic() {
-            tg.showPopup({title:'⚠️ Confirm', message:'Execute PANIC mode?'}, async (confirmed) => {
-                if (confirmed) {
-                    await fetch(`${API_BASE}/api/panic`, {method:'POST'});
-                    fetchStatus();
-                    tg.HapticFeedback.notificationOccurred('error');
-                }
-            });
         }
 
         // Init
