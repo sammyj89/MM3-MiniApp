@@ -596,11 +596,10 @@
                 title: 'Scanner',
                 message: 'Run scanner now?',
                 buttons: [
-                    {type: 'ok', text: 'Yes'},
-                    {type: 'cancel', text: 'No'}
+                    {type: 'ok',    text: 'Yes', id: 'ok'},
+                    {type: 'cancel', text: 'No',  id: 'cancel'}
                 ]
             });
-            debug('Confirmation result: ' + result);
             if (result !== 'ok') return;
 
             const btn = document.querySelector('.btn[onclick="runScreener()"]');
