@@ -530,7 +530,9 @@
                 }
 
                 // Show top picks as buttons
-                const buttons = json.data.map(item => ({
+                // Show top 2 picks as buttons (max 3 buttons total including Cancel)
+                const top2 = json.data.slice(0, 2);
+                const buttons = top2.map(item => ({
                     type: 'default',
                     text: `${item.symbol} (Score: ${item.score.toFixed(2)})`,
                     id: item.symbol
