@@ -509,6 +509,10 @@
             return new Promise(resolve => {
                 if (typeof tg.showPopup === 'function') {
                     tg.showPopup(params, (buttonId) => {
+                        // Temporary raw‑value debug
+                        const el = document.getElementById('debug');
+                        if (el) el.textContent = 'Raw callback value: ' + String(buttonId);
+                        // Keep the fallback for now
                         resolve(buttonId || 'cancel');
                     });
                 } else {
