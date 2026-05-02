@@ -90,6 +90,16 @@
 
     <select id="symbolSelect" class="symbol-select" style="display:none;"></select>
 
+    <!-- Slot‑Selection Modal (hidden by default) -->
+    <div id="slotModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background: var(--card); border-radius:12px; padding:20px; width:90%; max-width:400px;">
+            <h3 style="color: var(--accent); margin-bottom:12px;">Choose slot for <span id="modalNewSymbol"></span></h3>
+            <div id="slotButtons"></div>
+            <div id="modalAddNew" style="margin-top:8px;"></div>
+            <button class="btn" onclick="closeSlotModal()" style="margin-top:12px; background:#555;">Cancel</button>
+        </div>
+    </div>    
+    
     <div id="homeTab">
         <div class="card">
             <h3>📡 Scanner Top‑5</h3>
@@ -525,6 +535,56 @@
             });
         }
 
+        function openSlotModal(newSymbol) {
+            document.getElementById('modalNewSymbol').textContent = newSymbol.split(':')[0];
+            const slotDiv = document.getElementById('slotButtons');
+            const allSyms = Object.keys(allSlots || {});
+            let html = '';
+            allSyms.forEach((sym, idx) => {
+                html += `<button class="btn" style="margin-bottom:6px;" onclick="doRotate('${sym}', '${newSymbol}')">
+                            Replace Slot ${idx+1}: ${sym.split(':')[0]}
+                         </button>`;
+            });
+            slotDiv.innerHTML = html;
+            const addNewDiv = document.getElementById('modalAddNew');
+            if (allSyms.length < 3) {
+                addNewDiv.innerHTML = `<button class="btn" style="margin-bottom:6px;" onclick="doRotate('new', '${newSymbol}')">➕ Add as new slot</button>`;
+            } else {
+                addNewDiv.innerHTML = '';
+            }
+            document.getElementById('slotModal').style.display = 'flex';
+        }
+
+        function closeSlotModal() {
+            document.getElementById('slotModal').style.display = 'none';
+        }
+
+        async function doRotate(oldSym, newSym) {
+            closeSlotModal();
+            const btn = document.querySelector('.btn[onclick="runScreener()"]');
+            if (btn) btn.textContent = '⏳ Rotating…';
+            let success = false;
+            try {
+                if (oldSym === 'new') {
+                    const res = await fetch(`${API_BASE}/api/symbol`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:newSym})});
+                    success = (await res.json()).success;
+                } else {
+                    const res = await fetch(`${API_BASE}/api/rotate_symbol?old=${encodeURIComponent(oldSym)}&new=${encodeURIComponent(newSym)}`, {method:'POST'});
+                    success = (await res.json()).success;
+                }
+                if (success) {
+                    await showPopupAsync({title:'Done', message:`Slot ${oldSym==='new'?'added':'replaced'} with ${newSym}.`, buttons:[{type:'close', text:'OK'}]});
+                    if (oldSym === selectedSymbol || oldSym === 'new') selectedSymbol = newSym;
+                    fetchStatus();
+                } else {
+                    await showPopupAsync({title:'Failed', message:'Could not modify slot.', buttons:[{type:'close', text:'OK'}]});
+                }
+            } catch(e) {
+                await showPopupAsync({title:'Error', message:e.message, buttons:[{type:'close', text:'OK'}]});
+            }
+            if (btn) btn.textContent = '📡 Run Scanner';
+        }
+        
         async function runScreener() {
             const debug = (msg) => { 
                 const el = document.getElementById('debug');
@@ -536,12 +596,12 @@
                 title: 'Scanner',
                 message: 'Run scanner now?',
                 buttons: [
-                    {text: 'Yes', id: 'yes'},
-                    {text: 'No', id: 'no'}
+                    {type: 'ok', text: 'Yes'},
+                    {type: 'cancel', text: 'No'}
                 ]
             });
             debug('Confirmation result: ' + result);
-            if (result !== 'yes') return;
+            if (result !== 'ok') return;
 
             const btn = document.querySelector('.btn[onclick="runScreener()"]');
             if (btn) btn.textContent = '⏳ Scanning…';
@@ -550,64 +610,31 @@
                 debug('Fetching /api/run_screener…');
                 const res = await fetch(`${API_BASE}/api/run_screener`, {method:'POST'});
                 const json = await res.json();
-                debug('Response received: ' + JSON.stringify(json).substring(0, 80));
                 if (!json.success || !json.data.length) {
-                    await showPopupAsync({title:'No Picks', message:'Scanner found no suitable pairs.', buttons:[{text:'OK', id:'ok'}]});
+                    debug('No picks');
+                    await showPopupAsync({title:'No Picks', message:'Scanner found no suitable pairs.', buttons:[{type:'close', text:'OK'}]});
                     if (btn) btn.textContent = '📡 Run Scanner';
                     return;
                 }
-
                 debug('Showing pick buttons…');
-                const top2 = json.data.slice(0,2);
+                const top2 = json.data.slice(0, 2);
                 const buttons = top2.map(item => ({
+                    type: 'ok',
                     text: `${item.symbol} (Score: ${item.score.toFixed(2)})`,
                     id: item.symbol
                 }));
-                buttons.push({text:'Cancel', id:'cancel'});
-                const chosenSymbol = await showPopupAsync({title:'Select a pair', message:'Which pair to add?', buttons:buttons});
+                buttons.push({type:'cancel', text:'Cancel'});
+                const chosenSymbol = await showPopupAsync({title:'Select a pair', message:'This pair will be added to a slot.', buttons:buttons});
                 debug('Pick selection: ' + chosenSymbol);
                 if (!chosenSymbol || chosenSymbol === 'cancel') {
                     if (btn) btn.textContent = '📡 Run Scanner';
                     return;
                 }
 
-                // Build slot selection buttons
-                const slotButtons = allSlots && Object.keys(allSlots).length
-                    ? Object.keys(allSlots).map((sym, idx) => ({
-                        text: `Replace Slot ${idx+1}: ${sym.split(':')[0]}`,
-                        id: sym
-                    }))
-                    : [];
-                if (Object.keys(allSlots||{}).length < 3) {
-                    slotButtons.push({text:'➕ Add as new slot', id:'new'});
-                }
-                slotButtons.push({text:'Cancel', id:'cancel'});
-                const selectedSlot = await showPopupAsync({title:'Choose slot', message:`Where to put ${chosenSymbol}?`, buttons:slotButtons});
-                debug('Slot selection: ' + selectedSlot);
-                if (!selectedSlot || selectedSlot === 'cancel') {
-                    if (btn) btn.textContent = '📡 Run Scanner';
-                    return;
-                }
-
-                let success = false;
-                if (selectedSlot === 'new') {
-                    const addRes = await fetch(`${API_BASE}/api/symbol`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:chosenSymbol})});
-                    const addJson = await addRes.json();
-                    success = addJson.success;
-                } else {
-                    const rotateRes = await fetch(`${API_BASE}/api/rotate_symbol?old=${encodeURIComponent(selectedSlot)}&new=${encodeURIComponent(chosenSymbol)}`, {method:'POST'});
-                    const rotateJson = await rotateRes.json();
-                    success = rotateJson.success;
-                }
-                if (success) {
-                    await showPopupAsync({title:'Done', message:`Slot ${selectedSlot==='new'?'added':'replaced'} with ${chosenSymbol}.`, buttons:[{text:'OK', id:'ok'}]});
-                    fetchStatus();
-                } else {
-                    await showPopupAsync({title:'Failed', message:'Could not modify slot.', buttons:[{text:'OK', id:'ok'}]});
-                }
+                // Open HTML modal to choose slot
+                openSlotModal(chosenSymbol);
             } catch(e) {
                 debug('Error: ' + e.message);
-                await showPopupAsync({title:'Error', message:e.message, buttons:[{text:'OK', id:'ok'}]});
             }
             if (btn) btn.textContent = '📡 Run Scanner';
         }
